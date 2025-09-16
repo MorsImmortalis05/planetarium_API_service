@@ -1,11 +1,7 @@
 from django.db import models
 
 from planetarium_service import settings
-
-
-class AstronomyShow(models.Model):
-    title = models.CharField(max_length=255)
-    description = models.TextField()
+from user.models import User
 
 
 class PlanetariumDome(models.Model):
@@ -18,14 +14,19 @@ class ShowTheme(models.Model):
     name = models.CharField(max_length=255)
 
 
+class AstronomyShow(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    themes = models.ManyToManyField(ShowTheme, related_name='shows')
+
+
 class Reservation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="reservations"
     )
-
 
 
 class ShowSession(models.Model):
