@@ -32,12 +32,10 @@ class ReservationSerializer(serializers.ModelSerializer):
 
 
 class ShowSessionSerializer(serializers.ModelSerializer):
-    astronomy_show = serializers.SlugRelatedField(
-        read_only=True, slug_field="title"
-    )
-    planetarium_dome = serializers.SlugRelatedField(
-        read_only=True, slug_field="name"
-    )
+    astronomy_show = serializers.PrimaryKeyRelatedField(
+        queryset=AstronomyShow.objects.all())
+    planetarium_dome = serializers.PrimaryKeyRelatedField(
+        queryset=PlanetariumDome.objects.all())
 
     class Meta:
         model = ShowSession

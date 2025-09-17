@@ -196,3 +196,116 @@ class AdminApiTest(TestCase):
         }
         res = self.client.put(url, payload, format="json")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+    def test_filter_show_sessions_by_astronomy_show_and_dome(self):
+        other_dome = sample_dome(name="Orion")
+        other_theme = sample_show_theme(name="Astrobiology")
+        other_show = sample_astronomy_show(title="Alien Life",
+                                           description="Sci-fi",
+                                           themes=other_theme)
+        other_session = sample_show_session(
+            astronomy_show=other_show,
+            planetarium_dome=other_dome,
+            show_time=timezone.now()
+        )
+
+        res_by_show = self.client.get(
+            SHOW_SESSION_URL,
+            {"astronomy_shows": str(self.session.astronomy_show.id)}
+        )
+        self.assertEqual(res_by_show.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_by_show.data), 1)
+        self.assertEqual(res_by_show.data[0]["astronomy_show"],
+                         self.session.astronomy_show.id)
+
+        res_by_dome = self.client.get(
+            SHOW_SESSION_URL,
+            {"planetarium_domes": str(self.session.planetarium_dome.id)}
+        )
+        self.assertEqual(res_by_dome.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_by_dome.data), 1)
+        self.assertEqual(res_by_dome.data[0]["planetarium_dome"],
+                         self.session.planetarium_dome.id)
+
+        res_combined = self.client.get(
+            SHOW_SESSION_URL,
+            {
+                "astronomy_shows": str(self.session.astronomy_show.id),
+                "planetarium_domes": str(self.session.planetarium_dome.id)
+            }
+        )
+        self.assertEqual(res_combined.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_combined.data), 1)
+        self.assertEqual(res_combined.data[0]["id"], self.session.id)
+
+        res_empty = self.client.get(
+            SHOW_SESSION_URL,
+            {
+                "astronomy_shows": "9999",
+                "planetarium_domes": "9999"
+            }
+        )
+        self.assertEqual(res_empty.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_empty.data), 0)
+
+    def test_filter_show_themes_by_name(self):
+        other_theme = sample_show_theme(name="Astrobiology")
+        res = self.client.get(
+            SHOW_THEME_URL,
+            {"name": "astro"}
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 1)
+        self.assertEqual(res.data[0]["name"],
+                         other_theme.name)
+
+    def test_filter_astronomy_shows_by_title_and_themes(self):
+        theme_cosmo = sample_show_theme(name="Cosmogony")
+        theme_astro = sample_show_theme(name="Astrobiology")
+
+        show_star = sample_astronomy_show(
+            title="Star come back",
+            description="Good show",
+            themes=theme_cosmo
+        )
+        show_alien = sample_astronomy_show(
+            title="Alien Life",
+            description="Sci-fi",
+            themes=theme_astro
+        )
+        show_mixed = sample_astronomy_show(
+            title="Star and Aliens",
+            description="Mixed theme",
+            themes=theme_astro
+        )
+        res_by_title = self.client.get(ASTRONOMY_SHOW_URL, {"title": "star"})
+        self.assertEqual(res_by_title.status_code, status.HTTP_200_OK)
+        returned_titles = [s["title"].lower() for s in res_by_title.data]
+        self.assertIn("star come back".lower(), returned_titles)
+        self.assertIn("star and aliens".lower(), returned_titles)
+        self.assertNotIn("alien life".lower(), returned_titles)
+
+        res_by_theme = self.client.get(ASTRONOMY_SHOW_URL,
+                                       {"themes": str(theme_astro.id)})
+        self.assertEqual(res_by_theme.status_code, status.HTTP_200_OK)
+        returned_ids = [s["id"] for s in res_by_theme.data]
+        self.assertIn(show_alien.id, returned_ids)
+        self.assertIn(show_mixed.id, returned_ids)
+        self.assertNotIn(show_star.id, returned_ids)
+
+        res_combined = self.client.get(
+            ASTRONOMY_SHOW_URL,
+            {"title": "star", "themes": str(theme_astro.id)}
+        )
+        self.assertEqual(res_combined.status_code, status.HTTP_200_OK)
+        combined_ids = [s["id"] for s in res_combined.data]
+        self.assertIn(show_mixed.id, combined_ids)
+        self.assertNotIn(show_star.id, combined_ids)
+        self.assertNotIn(show_alien.id, combined_ids)
+
+        res_empty = self.client.get(
+            ASTRONOMY_SHOW_URL,
+            {"title": "nonexistent", "themes": str(theme_astro.id)}
+        )
+        self.assertEqual(res_empty.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_empty.data), 0)
