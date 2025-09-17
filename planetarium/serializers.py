@@ -7,13 +7,13 @@ from planetarium.models import AstronomyShow, PlanetariumDome, Reservation, \
 class PlanetariumDomeSerializer(serializers.ModelSerializer):
     class Meta:
         model = PlanetariumDome
-        fields = ("name", "rows", "seats_in_row")
+        fields = ("id", "name", "rows", "seats_in_row", "capacity")
 
 
 class ShowThemeSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShowTheme
-        fields = ("name", )
+        fields = ("id", "name", )
 
 
 class AstronomyShowSerializer(serializers.ModelSerializer):
@@ -22,13 +22,13 @@ class AstronomyShowSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = AstronomyShow
-        fields = ("title", "description", "themes", )
+        fields = ("id", "title", "description", "themes", )
 
 
 class ReservationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reservation
-        fields = ("created_at", )
+        fields = ("id", "created_at", )
 
 
 class ShowSessionSerializer(serializers.ModelSerializer):
@@ -38,10 +38,16 @@ class ShowSessionSerializer(serializers.ModelSerializer):
     planetarium_dome = serializers.SlugRelatedField(
         read_only=True, slug_field="name"
     )
+
     class Meta:
         model = ShowSession
-        fields = ("astronomy_show", "planetarium_dome", "show_time")
-
+        fields = (
+            "id",
+            "astronomy_show",
+            "planetarium_dome",
+            "show_time",
+            "tickets_sold"
+        )
 
 
 class TicketSerializer(serializers.ModelSerializer):
@@ -50,7 +56,7 @@ class TicketSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = Ticket
-        fields = ("row", "seat","show_session")
+        fields = ("id", "row", "seat","show_session")
 
 
 class AstronomyShowListSerializer(AstronomyShowSerializer):
@@ -65,4 +71,4 @@ class ShowThemeListSerializer(ShowThemeSerializer):
     )
     class Meta:
         model = ShowTheme
-        fields = ("name", "shows")
+        fields = ("id", "name", "shows")

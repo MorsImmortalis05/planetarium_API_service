@@ -20,6 +20,14 @@ class PlanetariumDomeViewSet(
     serializer_class = PlanetariumDomeSerializer
     permission_classes = (IsAuthenticatedOrReadOnly, )
 
+    def get_queryset(self):
+        name = self.request.query_params.get("name")
+
+        if name:
+            queryset = self.queryset.filter(title__icontains=name)
+
+        return queryset.distinct()
+
 
 class ShowThemeViewSet(
     mixins.CreateModelMixin,
@@ -29,14 +37,39 @@ class ShowThemeViewSet(
     queryset = ShowTheme.objects.all()
     serializer_class = ShowThemeSerializer
 
+    def get_queryset(self):
+        name = self.request.query_params.get("name")
+
+        if name:
+            queryset = self.queryset.filter(name__icontains=name)
+
+        return queryset.distinct()
+
 
 class AstronomyShowViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     GenericViewSet,
 ):
-    queryset = AstronomyShow.objects.all()
     serializer_class = AstronomyShowSerializer
+    queryset = AstronomyShow.objects.all()
+
+    def get_queryset(self):
+        title = self.request.query_params.get("title")
+        themes = self.request.query_params.get("themes")
+        queryset = AstronomyShow.objects.all()
+
+        if self.action in ("list", "retrieve"):
+            queryset = AstronomyShow.objects.prefetch_related("themes")
+
+        if themes:
+            themes_ids = [int(str_id) for str_id in themes.split(",")]
+            queryset = queryset.filter(themes__id__in=themes_ids)
+
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+
+        return queryset.distinct()
 
 
 class ReservationViewSet(
@@ -47,6 +80,14 @@ class ReservationViewSet(
     queryset = Reservation.objects.all()
     serializer_class = ReservationSerializer
 
+    def get_queryset(self):
+        user_id = self.request.query_params.get("user")
+
+        if user_id:
+            queryset = self.queryset.filter(user_id__exact=user_id)
+
+        return queryset.distinct()
+
 
 class ShowSessionViewSet(
     mixins.CreateModelMixin,
@@ -56,6 +97,29 @@ class ShowSessionViewSet(
     queryset = ShowSession.objects.all()
     serializer_class = ShowSessionSerializer
 
+    def get_queryset(self):
+        astronomy_shows = self.request.query_params.get("astronomy_shows")
+        planetarium_domes = self.request.query_params.get("planetarium_domes")
+        queryset = ShowSession.objects.all()
+
+        if self.action in ("list", "retrieve"):
+            queryset = ShowSession.objects.select_related(
+                "astronomy_show",
+                "planetarium_dome"
+            )
+
+        if astronomy_shows:
+            astronomy_shows_ids = [
+                int(str_id) for str_id in astronomy_shows.split(",")]
+            queryset = queryset.filter(astronomy_show__id__in=astronomy_shows_ids)
+
+        if planetarium_domes:
+            planetarium_domes_ids = [
+                int(str_id) for str_id in planetarium_domes.split(",")]
+            queryset = queryset.filter(planetarium_dome_id__in=planetarium_domes_ids)
+
+        return queryset.distinct()
+
 
 class TicketViewSet(
     mixins.CreateModelMixin,
@@ -64,3 +128,16 @@ class TicketViewSet(
 ):
     queryset = Ticket.objects.all()
     serializer_class = TicketSerializer
+
+    def get_queryset(self):
+        show_sessions = self.request.query_params.get("show_sessions")
+        queryset = Ticket.objects.all()
+
+        if self.action in ("list", "retrieve"):
+            queryset = Ticket.objects.select_related("show_session")
+
+        if show_sessions:
+            show_session_ids = [int(sid) for sid in show_sessions.split(",")]
+            queryset = queryset.filter(show_session__id__in=show_session_ids)
+
+        return queryset.distinct()
