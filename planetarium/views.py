@@ -1,10 +1,13 @@
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import mixins
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from rest_framework.viewsets import GenericViewSet
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from planetarium.models import PlanetariumDome, ShowTheme, AstronomyShow, \
     Reservation, ShowSession, Ticket
+from planetarium.permissions import \
+    IsAdminUpdateCreateOrIfAuthenticatedReadOnly, \
+    IsAdminOrAuthenticatedReadOnly, IsOwnerOrAdmin
 from planetarium.serializers import PlanetariumDomeSerializer, \
     ShowThemeSerializer, AstronomyShowSerializer, ReservationSerializer, \
     ShowSessionSerializer, TicketSerializer
@@ -13,11 +16,12 @@ from planetarium.serializers import PlanetariumDomeSerializer, \
 class PlanetariumDomeViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
+    mixins.UpdateModelMixin,
     GenericViewSet,
 ):
     queryset = PlanetariumDome.objects.all()
     serializer_class = PlanetariumDomeSerializer
-    permission_classes = (IsAuthenticatedOrReadOnly, )
+    permission_classes = (IsAdminUpdateCreateOrIfAuthenticatedReadOnly, )
 
     def get_queryset(self):
         name = self.request.query_params.get("name")
@@ -44,10 +48,12 @@ class PlanetariumDomeViewSet(
 class ShowThemeViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
+    mixins.UpdateModelMixin,
     GenericViewSet,
 ):
     queryset = ShowTheme.objects.all()
     serializer_class = ShowThemeSerializer
+    permission_classes = (IsAdminUpdateCreateOrIfAuthenticatedReadOnly, )
 
     def get_queryset(self):
         name = self.request.query_params.get("name")
@@ -71,13 +77,10 @@ class ShowThemeViewSet(
         return super().list(request, *args, **kwargs)
 
 
-class AstronomyShowViewSet(
-    mixins.CreateModelMixin,
-    mixins.ListModelMixin,
-    GenericViewSet,
-):
+class AstronomyShowViewSet(ModelViewSet):
     serializer_class = AstronomyShowSerializer
     queryset = AstronomyShow.objects.all()
+    permission_classes = (IsAdminOrAuthenticatedReadOnly, )
 
     def get_queryset(self):
         title = self.request.query_params.get("title")
@@ -122,8 +125,7 @@ class ReservationViewSet(
 ):
     queryset = Reservation.objects.all()
     serializer_class = ReservationSerializer
-
-
+    permission_classes = (IsOwnerOrAdmin, )
 
     def get_queryset(self):
         user_id = self.request.query_params.get("user")
@@ -155,6 +157,7 @@ class ShowSessionViewSet(
 ):
     queryset = ShowSession.objects.all()
     serializer_class = ShowSessionSerializer
+    permission_classes = (IsAdminOrAuthenticatedReadOnly,)
 
     def get_queryset(self):
         astronomy_shows = self.request.query_params.get("astronomy_shows")
@@ -207,6 +210,7 @@ class TicketViewSet(
 ):
     queryset = Ticket.objects.all()
     serializer_class = TicketSerializer
+    permission_classes = (IsAuthenticatedOrReadOnly, )
 
     def get_queryset(self):
         show_sessions = self.request.query_params.get("show_sessions")
