@@ -25,9 +25,10 @@ class PlanetariumDomeViewSet(
 
     def get_queryset(self):
         name = self.request.query_params.get("name")
+        queryset = PlanetariumDome.objects.all()
 
         if name:
-            queryset = self.queryset.filter(title__icontains=name)
+            queryset = queryset.filter(title__icontains=name)
 
         return queryset.distinct()
 
@@ -57,9 +58,10 @@ class ShowThemeViewSet(
 
     def get_queryset(self):
         name = self.request.query_params.get("name")
+        queryset = ShowTheme.objects.all()
 
         if name:
-            queryset = self.queryset.filter(name__icontains=name)
+            queryset = queryset.filter(name__icontains=name)
 
         return queryset.distinct()
 
@@ -119,6 +121,7 @@ class AstronomyShowViewSet(ModelViewSet):
 
 
 class ReservationViewSet(
+    mixins.RetrieveModelMixin,
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     GenericViewSet,
@@ -129,9 +132,10 @@ class ReservationViewSet(
 
     def get_queryset(self):
         user_id = self.request.query_params.get("user")
+        queryset = Reservation.objects.all()
 
         if user_id:
-            queryset = self.queryset.filter(user_id__exact=user_id)
+            queryset = queryset.filter(user_id__exact=user_id)
 
         return queryset.distinct()
 
@@ -150,11 +154,7 @@ class ReservationViewSet(
         return super().list(request, *args, **kwargs)
 
 
-class ShowSessionViewSet(
-    mixins.CreateModelMixin,
-    mixins.ListModelMixin,
-    GenericViewSet,
-):
+class ShowSessionViewSet(ModelViewSet):
     queryset = ShowSession.objects.all()
     serializer_class = ShowSessionSerializer
     permission_classes = (IsAdminOrAuthenticatedReadOnly,)
